@@ -1,0 +1,17 @@
+.cell {
+  width: 30px;
+  height: 30px;
+  dispaly: inline;
+  text-align: center;
+  vertical-align: center;
+  line-height: 30px;
+  border: 1px solid #666;
+}
+
+.selected {
+  background-color: aqua;
+}
+
+.can-be-selected {
+  background-color: antiquewhite;
+}

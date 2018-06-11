@@ -1,0 +1,8 @@
+app-cell {
+  float: left;
+}
+
+.cell-container {
+  width: 301px;
+  margin: auto;
+}
