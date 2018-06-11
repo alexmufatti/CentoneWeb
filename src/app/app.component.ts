@@ -10,7 +10,7 @@ import * as _ from 'lodash';
 })
 export class AppComponent {
   title = 'Centone Web';
-  cells = [];
+  cells: Array<Cell> = [];
   moves = [
     {dx: 2, dy: 2},
     {dx: 2, dy: -2},
@@ -23,11 +23,14 @@ export class AppComponent {
   ];
   side = 5;
   numberOfSelected = 1;
+  timeout = 1;
+  suggest = false;
+  running = false;
 
   constructor() {
     for (let x = 0; x < this.side; x++) {
       for (let y = 0; y < this.side; y++) {
-        this.cells.push({x: x, y: y, selected: x === 0 && y === 0 ? true : false, canBeSelected: false, number: x === 0 && y === 0 ? '1' : ''});
+        this.cells.push( new Cell(x, y, x === 0 && y === 0 ? true : false, false, x === 0 && y === 0 ? '1' : ''));
       }
     }
     this.calculatedPossibleMoves(this.cells[0]);
@@ -58,32 +61,34 @@ export class AppComponent {
   }
 
   private getPosition(x: number, y: number): number {
-    return x * 10 + y;
-  }
-
-
-  resolve(index: number): boolean {
-    const cell = this.cells[index];
-    for (const move of this.moves) {
-      console.log('X: ' + (cell.x + move.dx) + ' Y:' + (cell.y + move.dy));
-      if (cell.x + move.dx < this.side && cell.y + move.dy < this.side && cell.x + move.dx > -1 && cell.y + move.dy > -1 && this.cells[this.getPosition(cell.x + move.dx, cell.y + move.dy)] && !this.cells[this.getPosition(cell.x + move.dx, cell.y + move.dy)].selected) {
-        this.cells[this.getPosition(cell.x + move.dx, cell.y + move.dy)].selected = true;
-        const res = this.resolve(this.getPosition(cell.x + move.dx, cell.y + move.dy));
-        if (res) {
-          return res;
-        } else {
-          this.cells[this.getPosition(cell.x + move.dx, cell.y + move.dy)].selected = false;
-        }
-      }
-    }
-    return false;
+    return x * this.side + y;
   }
 
   resolveAsync(): void {
+    this.running = true;
     window.setTimeout(this.nextStep, 10, this.cells[0], 0, new Array<CellMove>(), this);
   }
 
+  stop(): void {
+    this.running = false;
+  }
+
+  reset(): void {
+    this.numberOfSelected = 1;
+    this.cells = new Array<Cell>();
+    for (let x = 0; x < this.side; x++) {
+      for (let y = 0; y < this.side; y++) {
+        this.cells.push( new Cell(x, y, x === 0 && y === 0 ? true : false, false, x === 0 && y === 0 ? '1' : ''));
+      }
+    }
+    this.calculatedPossibleMoves(this.cells[0]);
+  }
+
   nextStep(cell, moveIdx, indexList: Array<CellMove>, me) {
+    if (!me.running) {
+      me.reset();
+      return;
+    }
     console.log('Cell:' + cell.x + ',' + cell.y + ' Move:' + moveIdx);
     if (moveIdx >= me.moves.length) {
       console.log(indexList.length);
@@ -93,7 +98,8 @@ export class AppComponent {
         const LastCell = indexList.pop();
         LastCell.cell.selected = false;
         LastCell.cell.number = '';
-        window.setTimeout(me.nextStep, 10, indexList[indexList.length - 1].cell, indexList[indexList.length - 1].moveIdx + 1, indexList, me);
+        indexList[indexList.length - 1].moveIdx = indexList[indexList.length - 1].moveIdx + 1;
+        window.setTimeout(me.nextStep, this.timeout, indexList[indexList.length - 1].cell, indexList[indexList.length - 1].moveIdx, indexList, me);
       }
     } else {
       const move = me.moves[moveIdx];
@@ -106,12 +112,12 @@ export class AppComponent {
 
         indexList.push({ cell: nextCell, moveIdx: 0});
         nextCell.number = indexList.length + 1;
-        window.setTimeout(me.nextStep, 10, nextCell, 0, indexList, me);
+        window.setTimeout(me.nextStep, this.timeout, nextCell, 0, indexList, me);
       } else {
         const lastCell = indexList.pop();
         lastCell.moveIdx = moveIdx + 1;
         indexList.push(lastCell);
-        window.setTimeout(me.nextStep, 10, cell, moveIdx + 1, indexList, me);
+        window.setTimeout(me.nextStep, this.timeout, cell, moveIdx + 1, indexList, me);
       }
     }
   }
@@ -123,6 +129,15 @@ class CellMove {
 }
 
 class Cell {
+  constructor(x, y, selected, canBeSelected, number) {
+    this.selected = selected;
+    this.canBeSelected = canBeSelected;
+    this.number = number;
+    this.x = x;
+    this.y = y;
+  }
+  x = 0;
+  y = 0;
   selected = false;
   canBeSelected = false;
   number = '';
