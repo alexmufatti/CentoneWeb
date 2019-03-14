@@ -1,6 +1,6 @@
 import {ChangeDetectorRef, Component} from '@angular/core';
 import {CellComponent} from './cell.component';
-import {forEach} from '@angular/router/src/utils/collection';
+import {Cell, CellMove} from './models';
 import * as _ from 'lodash';
 
 @Component({
@@ -30,7 +30,7 @@ export class AppComponent {
   constructor() {
     for (let x = 0; x < this.side; x++) {
       for (let y = 0; y < this.side; y++) {
-        this.cells.push( new Cell(x, y, x === 0 && y === 0 ? true : false, false, x === 0 && y === 0 ? '1' : ''));
+        this.cells.push(new Cell(x, y, x === 0 && y === 0 ? true : false, false, x === 0 && y === 0 ? '1' : ''));
       }
     }
     this.calculatedPossibleMoves(this.cells[0]);
@@ -78,7 +78,8 @@ export class AppComponent {
     this.cells = new Array<Cell>();
     for (let x = 0; x < this.side; x++) {
       for (let y = 0; y < this.side; y++) {
-        this.cells.push( new Cell(x, y, x === 0 && y === 0 ? true : false, false, x === 0 && y === 0 ? '1' : ''));
+        const cell = new Cell(x, y, x === 0 && y === 0 ? true : false, false, x === 0 && y === 0 ? '1' : '');
+        this.cells.push(cell);
       }
     }
     this.calculatedPossibleMoves(this.cells[0]);
@@ -90,17 +91,18 @@ export class AppComponent {
       return;
     }
     console.log('Cell:' + cell.x + ',' + cell.y + ' Move:' + moveIdx);
+    if (indexList.length + 1 === me.side * me.side) {
+      console.log('END');
+      return;
+    }
     if (moveIdx >= me.moves.length) {
       console.log(indexList.length);
-      if (indexList.length === me.side * me.side) {
-        console.log('END');
-      } else {
-        const LastCell = indexList.pop();
-        LastCell.cell.selected = false;
-        LastCell.cell.number = '';
-        indexList[indexList.length - 1].moveIdx = indexList[indexList.length - 1].moveIdx + 1;
-        window.setTimeout(me.nextStep, this.timeout, indexList[indexList.length - 1].cell, indexList[indexList.length - 1].moveIdx, indexList, me);
-      }
+      const LastCell = indexList.pop();
+      LastCell.cell.selected = false;
+      LastCell.cell.number = '';
+      const nextCell = _.last(indexList);
+      nextCell.moveIdx++;
+      window.setTimeout(me.nextStep, this.timeout, nextCell.cell, nextCell.moveIdx, indexList, me);
     } else {
       const move = me.moves[moveIdx];
       console.log('X: ' + (cell.x + move.dx) + ' Y:' + (cell.y + move.dy));
@@ -110,12 +112,12 @@ export class AppComponent {
         const nextCell = me.cells[me.getPosition(cell.x + move.dx, cell.y + move.dy)];
         nextCell.selected = true;
 
-        indexList.push({ cell: nextCell, moveIdx: 0});
+        indexList.push({cell: nextCell, moveIdx: 0});
         nextCell.number = indexList.length + 1;
         window.setTimeout(me.nextStep, this.timeout, nextCell, 0, indexList, me);
       } else {
         const lastCell = indexList.pop();
-        lastCell.moveIdx = moveIdx + 1;
+        lastCell.moveIdx++;
         indexList.push(lastCell);
         window.setTimeout(me.nextStep, this.timeout, cell, moveIdx + 1, indexList, me);
       }
@@ -123,22 +125,3 @@ export class AppComponent {
   }
 }
 
-class CellMove {
-  cell: Cell = null;
-  moveIdx = -1;
-}
-
-class Cell {
-  constructor(x, y, selected, canBeSelected, number) {
-    this.selected = selected;
-    this.canBeSelected = canBeSelected;
-    this.number = number;
-    this.x = x;
-    this.y = y;
-  }
-  x = 0;
-  y = 0;
-  selected = false;
-  canBeSelected = false;
-  number = '';
-}
